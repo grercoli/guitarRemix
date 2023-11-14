@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import {
   Meta,
   Links,
@@ -53,10 +54,64 @@ export function links() {
   ]
 }
 
+// En el outlet declaro context de esa forma voy a atar codigo al context que ya viene en Remix, siempre es un objeto, se puede pasar lo que yo desee. Este context que yo declare aca solo va a funcionar en el PRIMER NIVEL de rutas, es decir no en rutas hijas o anidadas.
 export default function App() {
+  const carritoLS = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("carrito")) ?? [] : null;
+  
+  const [ carrito, setCarrito ] = useState(carritoLS);
+
+  // todo lo que se coloque dentro de un useEffect en Remix se va a ejecutar del lado del cliente
+  useEffect(() => {
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+  }, [carrito])
+
+  const agregarCarrito = (guitarra: any) => {
+    // itera sobre los elementos que hay en el carrito y nos devuelve un true en caso de que uno de los elementos del array cumpla con la condicion
+    if (carrito.some((guitarraState: any) => guitarraState.id === guitarra.id)) {
+      // Iterar sobre el arreglo e identificar al elemento duplicado, tener en cuenta que el map te retorna un arreglo nuevo
+      const carritoActualizado = carrito.map((guitarState: any) => {
+        if (guitarState.id === guitarra.id) {
+          // Reescribir la cantidad
+          guitarState.cantidad = guitarra.cantidad;
+        }
+        return guitarState;
+      });
+
+      setCarrito(carritoActualizado);
+    } else {
+      // Registro nuevo, agregar al carrito
+      setCarrito([...carrito, guitarra]);
+    }
+  }
+
+  const actualizarCantidad = (guitarra: any) => {
+    const carritoActualizado = carrito.map((guitarState: any) => {
+      if (guitarState.id === guitarra.id) {
+        // Reescribir la cantidad
+        guitarState.cantidad = guitarra.cantidad;
+      }
+      return guitarState;
+    });
+
+    setCarrito(carritoActualizado);
+  }
+
+  const eliminarGuitarra = (id: any) => {
+    const carritoActualizado = carrito.filter((guitarState: any) => guitarState.id !== id);
+
+    setCarrito(carritoActualizado);
+  }
+
   return (
     <Document>
-      <Outlet /> 
+      <Outlet 
+        context={{
+          agregarCarrito,
+          carrito,
+          actualizarCantidad,
+          eliminarGuitarra
+        }}
+      /> 
     </Document>
   )
 }
